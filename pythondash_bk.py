@@ -310,7 +310,7 @@ def createDash():
     helper.lightIntensity = random.randint(0, 1000)
     helper.isLightOn = 'Light OFF'
     helper.motorStatusMsg = "Motor is OFF"
-    #helper.userTag = random.randint(10000000000000, 99999999999999)
+    # helper.userTag = random.randint(10000000000000, 99999999999999)
     helper.userTag = "E3 17 ED 15"
 
     # GPIO.setmode(GPIO.BCM)
@@ -328,13 +328,11 @@ def createDash():
             html.Div(id='user-tag-box', children=[
                 html.Img(src=app.get_asset_url(checkProfile()), id='iot-logo', style={'margin-left': 'auto', 'margin-right': 'auto', 'display': 'block', 'width': '100px', 'height': '100px'}),
                 html.H3(children='User Tag', style={'text-align': 'center'}),
-                html.P(children=helper.userTag, style={'text-align': 'center'}, id = 'userTag'),
+                html.P(children=helper.userTag, style={'text-align': 'center'}),
                 html.H3(children='Temperature Threshold', style={'text-align': 'center'}),
-                html.P(children=helper.temperatureThresh, style={'text-align': 'center'}, id='tempThres'),
+                html.P(children=helper.temperatureThresh, style={'text-align': 'center'}),
                 html.H3(children='Humidity Threshold', style={'text-align': 'center'}),
-                html.P(children=helper.humidityThresh, style={'text-align': 'center'}, id='humidityThresh'),
-                html.H3(children='Light Threshold', style={'text-align': 'center'}),
-                html.P(children=helper.lightThresh, style={'text-align': 'center'}, id='lightThresh'),
+                html.P(children=helper.humidityThresh, style={'text-align': 'center'}),
             ]),
             # Images for LED on, off, motor on and off
             html.Div(id='led-box', children=[
@@ -396,7 +394,12 @@ def createDash():
             html.H1(children="Please scan your RFID Tag to load profile values", style={'text-align':'center'})
         ])
 
-    # TODO: Is this even required?
+        # Refresh page every 2 seconds
+        @app.callback(dash.dependencies.Output('user-tag-box', 'children'),
+        [dash.dependencies.Input('temperature-component', 'n_intervals')])
+        def update_user_tag(n):
+            return helper.userTag, helper.temperatureThresh, helper.humidityThresh, helper.isLightOn, helper.motorStatusMsg
+
     def updateIcons():
         # Update the icons
         if (helper.motorStatusMsg == "Motor is ON"):
@@ -408,54 +411,29 @@ def createDash():
         else:
             lightIconStatus = False
         return motorIconStatus, lightIconStatus
-        # FIXME: Remove this code, it is not needed.
-    # @app.callback(
-    #     dash.dependencies.Output('humidity-gauge', 'value'),
-    #     [dash.dependencies.Input('humidity-interval', 'n_intervals')]
-    # )
-    # def update_output(n):
-    #     humidity = get_temp_humidity()[1]
-    #     return humidity
-    # @app.callback(
-    #     dash.dependencies.Output('temperature-gauge', 'value'),
-    #     [dash.dependencies.Input('temperature-interval', 'n_intervals')]
-    # )
-    # def update_output2(n):
-    #     temperature = get_temp_humidity()[0]
-    #     return temperature
-    # @app.callback(
-    #     dash.dependencies.Output('light-display', 'value'),
-    #     [dash.dependencies.Input('light-interval', 'n_intervals')]
-    # )
-    # def update_output3(n):
-    #     lightIntensity = get_temp_humidity()[2]
-    #     # lightIntensity = helper.lightIntensity FIXME: Uncomment this when you want to test production
-    #     return lightIntensity
-
-    @app.callback(dash.dependencies.Output('userTag', 'children'),
-        [dash.dependencies.Input('humidity-interval', 'n_intervals')])    
-    def update_user_temperature(n):
-        # helper.userTag = users[0][0]
-        return helper.userTag  
-
-    @app.callback(dash.dependencies.Output('tempThres', 'children'),
-        [dash.dependencies.Input('temperature-interval', 'n_intervals')])    
-    def update_user_temperature(n):
-        # helper.temperatureThresh = users[0][1]
-        return helper.temperatureThresh
-
-    @app.callback(dash.dependencies.Output('humidityThresh', 'children'),
-        [dash.dependencies.Input('humidity-interval', 'n_intervals')])    
-    def update_user_temperature(n):
-        # helper.humidityThresh = users[0][2]
-        return helper.humidityThresh
-
-    @app.callback(dash.dependencies.Output('lightThresh', 'children'),
-        [dash.dependencies.Input('light-interval', 'n_intervals')])    
-    def update_user_temperature(n):
-        # helper.lightThresh = users[0][3]
-        return helper.lightThresh 
-   
+    @app.callback(
+        dash.dependencies.Output('humidity-gauge', 'value'),
+        [dash.dependencies.Input('humidity-interval', 'n_intervals')]
+    )
+    def update_output(n):
+        humidity = get_temp_humidity()[1]
+        return humidity
+    @app.callback(
+        dash.dependencies.Output('temperature-gauge', 'value'),
+        [dash.dependencies.Input('temperature-interval', 'n_intervals')]
+    )
+    def update_output2(n):
+        temperature = get_temp_humidity()[0]
+        return temperature
+    @app.callback(
+        dash.dependencies.Output('light-display', 'value'),
+        [dash.dependencies.Input('light-interval', 'n_intervals')]
+    )
+    def update_output3(n):
+        lightIntensity = get_temp_humidity()[2]
+        # lightIntensity = helper.lightIntensity FIXME: Uncomment this when you want to test production
+        return lightIntensity
+    
     return app
 
 def main():
