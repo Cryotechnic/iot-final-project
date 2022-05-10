@@ -1,3 +1,5 @@
+import random as r
+
 # Initialization
 
 # DHT Sensor Initialization
