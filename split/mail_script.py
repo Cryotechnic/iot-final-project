@@ -73,9 +73,11 @@ def receiveMail():
                     body = body.decode('utf-8')
                     if body.lower().startswith("enable"):
                         print("Motor is enabled")
+                        mail.logout()
                         return True
         except Exception as e:
-                print("No new emails")
+            mail.logout()
+            print("No new emails")
 
 if __name__ == "__main__":
     receiveMail()

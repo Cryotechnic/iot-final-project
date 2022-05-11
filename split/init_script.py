@@ -21,15 +21,7 @@ LED_PIN = 6
 
 
 # Motor Initialization
-isMotorOn = False
-motorStatus = "Motor is OFF"
-Motor1A = 24
-Motor1B = 23
-Motor1E = 25
-# GPIO.setup(Motor1A, GPIO.OUT)
-# GPIO.setup(Motor1B, GPIO.OUT)
-# GPIO.setup(Motor1E, GPIO.OUT)
-# GPIO.output(Motor1E, GPIO.LOW)
+
 
 # MQTT Initialization
 # tempMsg = ""
@@ -67,6 +59,7 @@ users = [
 ]
 
 # Helper Class with default values
+
 class helper:
     lightIntensity = 0 # NOTE: Displays light value from 0-1000 (0-100%)
     humidityThresh = 60 # NOTE: Displays humidity threshold value from 20-80
@@ -74,8 +67,8 @@ class helper:
     humidity = 0
     temperatureThresh = 80 # NOTE: Displays temperature threshold value from 20-100
     lightThresh = 800 # NOTE: Displays light threshold value from 0-1000 (0-100%)
-    isLightOn = 'Light is OFF' # NOTE: checks
-    motorStatusMsg = 'Light is ON' # NOTE: Displays motor status
+    isLightOn = '' # NOTE: checks
+    motorStatusMsg = '' # NOTE: Displays motor status
     sentEmailCount = 0 # NOTE: Displays number of emails sent
     userTag = '' # NOTE: Displays user tag
     username = '' # NOTE: Displays username

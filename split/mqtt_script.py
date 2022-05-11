@@ -3,6 +3,7 @@ from init_script import *
 import random as r
 import time
 import mail_script
+import my_globals as helper
 # import motor_script
 
 topic = [("IoT/light",0), ("IoT/humidity",0), ("IoT/temperature",0), ("IoT/rfid",0)]
@@ -11,6 +12,22 @@ username = "user"
 password = "user"
 broker = '192.168.0.183' # FIXME: Maybe find a way to ask for user input?
 port = 1883
+
+# Profiles
+users = [
+    [
+        'B3 72 85 0D',
+        23,
+        40,
+        200
+    ],
+    [
+        'E3 17 ED 15',
+        24,
+        50,
+        300
+    ]
+]
 class mailStatus:
     isLightMailSent = False
     isMotorMailSent = False
