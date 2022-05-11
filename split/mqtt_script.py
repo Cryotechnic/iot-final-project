@@ -8,7 +8,7 @@ topic = [("IoT/light",0), ("IoT/humidity",0), ("IoT/temperature",0), ("IoT/rfid"
 client_id = f'python-mqtt-{r.randint(0,100)}'
 username = "user"
 password = "user"
-broker = '192.168.0.183' # FIXME: Maybe find a way to ask for user input?
+broker = 'localhost' # FIXME: Maybe find a way to ask for user input?
 port = 1883
 
 
@@ -31,13 +31,20 @@ def subscribeTopic(client: mqtt_client):
         temperatureMsg = ""
         isMotorMailSent = False
         isLightMailSent = False
-        # sentEmailCount = 0 # FIXME: Replaced by helper but may need to localize instead
-        emailMessage = ""
 
         # Sorts based on topic type
         if (msg.topic == "IoT/light"):
             lightMsg = int(msg.payload.decode())
             helper.lightIntensity = lightMsg
+            if (str(lightMsg) < "400" and isLightMailSent == False):
+                # print("-------------------------")
+            # print("DBG -- subscribeTopic > LightMsg: " + str(lightMsg))
+            # print("Email sending...")
+            # print("-------------------------")
+                isLightMailSent = True
+                helper.isLightOn = 'Light is ON'
+            # GPIO.output(LED_PIN, GPIO.HIGH) # Turn on LED
+                mail_script.sendLEDNotificationEmail()
 
         if (msg.topic == "IoT/humidity"):
             humidityMsg = float(msg.payload.decode())
@@ -47,6 +54,7 @@ def subscribeTopic(client: mqtt_client):
             temperatureMsg = float(msg.payload.decode())
             helper.temperatureThresh = temperatureMsg
             if (temperatureMsg > 20 and isMotorMailSent != True and helper.sentEmailCount == 0):
+                motor_script.spinMotor()
                 mail_script.sendMotorNotificationEmail()
                 helper.sentEmailCount += 1
                 isMotorMailSent = True
@@ -55,8 +63,8 @@ def subscribeTopic(client: mqtt_client):
                 isMotorMailSent = False
     
         if (msg.topic == "IoT/rfid"):
-            # sendProfileEmail()
             helper.userTag = msg.payload.decode()
+            mail_script.sendProfileEmail()
             for user in users:
                 if(user[0].lower() == helper.userTag.lower().strip()):
                     helper.temperatureThresh = user[1]
@@ -81,7 +89,13 @@ def subscribeTopic(client: mqtt_client):
 
     client.subscribe(topic)
     client.on_message = on_message
-    
+
+    # Test data
+    client.publish("IoT/light", "400")
+    client.publish("IoT/humidity", "50")
+    client.publish("IoT/temperature", "20")
+    client.publish("IoT/rfid", "B3 72 85 0D")
+
     print("All info:")
     print(f"DBG --- Light intensity: {helper.lightIntensity}")
     print(f"DBG --- Humidity Thresh: {helper.humidityThresh}")
@@ -92,8 +106,7 @@ def subscribeTopic(client: mqtt_client):
     print(f"DBG --- Light: {helper.isLightOn}")
     print(f"DBG --- User Tag: {helper.userTag}")
     print(f"DBG --- Motor status: {helper.motorStatusMsg}")
-
-    return helper.lightIntensity, helper.humidityThresh, helper.temperatureThresh, helper.isLightOn
+    return helper.lightIntensity, helper.humidityThresh, helper.temperatureThresh, helper.temperature, helper.humidity, helper.lightThresh, helper.isLightOn, helper.userTag, helper.motorStatusMsg
 
 # main() for testing
 if __name__ == "__main__":
