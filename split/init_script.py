@@ -74,8 +74,8 @@ class helper:
     humidity = 0
     temperatureThresh = 80 # NOTE: Displays temperature threshold value from 20-100
     lightThresh = 800 # NOTE: Displays light threshold value from 0-1000 (0-100%)
-    isLightOn = '' # NOTE: checks
-    motorStatusMsg = '' # NOTE: Displays motor status
+    isLightOn = 'Light is OFF' # NOTE: checks
+    motorStatusMsg = 'Light is ON' # NOTE: Displays motor status
     sentEmailCount = 0 # NOTE: Displays number of emails sent
     userTag = '' # NOTE: Displays user tag
     username = '' # NOTE: Displays username
