@@ -4,7 +4,7 @@ import email
 import time
 from datetime import date
 import init_script as init
-import motor_script as motor
+# import motor_script as motor
 
 
 
@@ -54,28 +54,28 @@ def sendMotorNotificationEmail():
 
 def receiveMail():
 
+    while True:
     # get most recent email
-    mail = imaplib.IMAP4_SSL('imap.gmail.com')
-    mail.login(sender, password)
-    mail.list()
-    mail.select('inbox')
-    result, data = mail.uid('search', None, 'ALL')
-    inbox_item_list = data[0].split()
-    most_recent = inbox_item_list[-1]
-    result, data = mail.uid('fetch', most_recent, '(RFC822)')
-    raw_email = data[0][1].decode('utf-8')
-    email_message = email.message_from_string(raw_email)
-    for part in email_message.walk():
-        if part.get_content_type() == "text/plain":
-            body = part.get_payload(decode=True)
-            body = body.decode('utf-8')
-            if body.lower().startswith("enable"):
-                return True
+        try:
+            mail = imaplib.IMAP4_SSL('imap.gmail.com')
+            mail.login(sender, password)
+            mail.list()
+            mail.select('inbox')
+            result, data = mail.uid('search', None, 'ALL')
+            inbox_item_list = data[0].split()
+            most_recent = inbox_item_list[-1]
+            result, data = mail.uid('fetch', most_recent, '(RFC822)')
+            raw_email = data[0][1].decode('utf-8')
+            email_message = email.message_from_string(raw_email)
+            for part in email_message.walk():
+                if part.get_content_type() == "text/plain":
+                    body = part.get_payload(decode=True)
+                    body = body.decode('utf-8')
+                    if body.lower().startswith("enable"):
+                        print("Motor is enabled")
+                        return True
+        except Exception as e:
+                print("No new emails")
 
-    return False
-
-    
-
-# temp main function
 if __name__ == "__main__":
     receiveMail()

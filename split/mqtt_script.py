@@ -2,14 +2,17 @@ from paho.mqtt import client as mqtt_client
 from init_script import *
 import time
 import mail_script
-import motor_script
+# import motor_script
 
 topic = [("IoT/light",0), ("IoT/humidity",0), ("IoT/temperature",0), ("IoT/rfid",0)]
 client_id = f'python-mqtt-{r.randint(0,100)}'
 username = "user"
 password = "user"
-broker = 'localhost' # FIXME: Maybe find a way to ask for user input?
+broker = '192.168.0.183' # FIXME: Maybe find a way to ask for user input?
 port = 1883
+class mailStatus:
+    isLightMailSent = False
+    isMotorMailSent = False
 
 
 def connect_mqtt() -> mqtt_client:
@@ -29,19 +32,17 @@ def subscribeTopic(client: mqtt_client):
         lightMsg = ""
         humidityMsg = ""
         temperatureMsg = ""
-        isMotorMailSent = False
-        isLightMailSent = False
 
         # Sorts based on topic type
         if (msg.topic == "IoT/light"):
             lightMsg = int(msg.payload.decode())
             helper.lightIntensity = lightMsg
-            if (str(lightMsg) < "400" and isLightMailSent == False):
+            if (str(lightMsg) < "400" and mailStatus.isLightMailSent == False):
                 # print("-------------------------")
             # print("DBG -- subscribeTopic > LightMsg: " + str(lightMsg))
             # print("Email sending...")
             # print("-------------------------")
-                isLightMailSent = True
+                mailStatus.isLightMailSent = True
                 helper.isLightOn = 'Light is ON'
             # GPIO.output(LED_PIN, GPIO.HIGH) # Turn on LED
                 mail_script.sendLEDNotificationEmail()
@@ -53,14 +54,14 @@ def subscribeTopic(client: mqtt_client):
         if (msg.topic == "IoT/temperature"):
             temperatureMsg = float(msg.payload.decode())
             helper.temperatureThresh = temperatureMsg
-            if (temperatureMsg > 20 and isMotorMailSent != True and helper.sentEmailCount == 0):
-                motor_script.spinMotor()
+            if (temperatureMsg > 20 and mailStatus.isMotorMailSent != True and helper.sentEmailCount == 0):
+                # motor_script.spinMotor()
                 mail_script.sendMotorNotificationEmail()
                 helper.sentEmailCount += 1
-                isMotorMailSent = True
+                mailStatus.isMotorMailSent = True
             else:
                 helper.sentEmailCount = 0
-                isMotorMailSent = False
+                mailStatus.isMotorMailSent = False
     
         if (msg.topic == "IoT/rfid"):
             helper.userTag = msg.payload.decode()
@@ -72,9 +73,11 @@ def subscribeTopic(client: mqtt_client):
                     helper.lightThresh = user[3]  
         # else:
         #     print("DBG --- Unknown topic received.\n")
-        if (isMotorMailSent == True and helper.sentEmailCount == 1):
+        if (mailStatus.isMotorMailSent == True and helper.sentEmailCount == 1):
             reply = mail_script.receiveMail()
-        
+            if (mail_script.receiveMail()):
+                print("DBG --- Email received.\n")
+                # motor_script.spinMotor()
 
     client.subscribe(topic)
     client.on_message = on_message
@@ -103,6 +106,4 @@ if __name__ == "__main__":
     client = connect_mqtt()
     subscribeTopic(client)
     client.loop_forever()
-    # wait 5 seconds before closing
-    time.sleep(5)
     
