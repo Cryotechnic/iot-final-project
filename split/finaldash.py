@@ -22,6 +22,7 @@ import random
 # import RPi.GPIO as GPIO
 import mail_script as mail
 import init_script as init
+import mqtt_script as mqtt
 
 def updateThresholds(var_name: str, var_value: int):
     if (var_name == "lightThresh"):
@@ -43,14 +44,31 @@ def checkProfile():
         else:
             return 'person.png'
 
+def checkLight():
+    if (init.helper.lightIntensity >= init.helper.lightThresh):
+        return 'lightOn.png'
+    else:
+        return 'lightOff.png'
+
+def checkMotor():
+    if (init.helper.motorStatusMsg == "Motor is ON"):
+        return 'motorOn.png'
+    else:
+        return 'motorOff.png'
+
 def createDash():
     temperature = init.helper.temperature
     humidity = init.helper.humidity 
     lightIntensity = init.helper.lightIntensity
     isLightOn = init.helper.isLightOn
     motorStatusMsg = init.helper.motorStatusMsg
+    # userTag = init.helper.userTag
+    # userTag = "B3 72 85 0D"
+    # userTag = "E3 17 ED 15"
+    init.helper.userTag = "B3 72 85 0D"
+    # init.helper.userTag = "E3 17 ED 15"
     userTag = init.helper.userTag
-    
+    print ("DBG -- createDash > userTag: " + userTag)
     # init.helper.lightIntensity = random.randint(0, 1000)
     # init.helper.isLightOn = 'Light OFF'
     # init.helper.motorStatusMsg = "Motor is OFF"
@@ -61,15 +79,15 @@ def createDash():
     # GPIO.setup(17, GPIO.IN)
 
     app = dash.Dash(meta_tags=[{"name": "viewport", "content": "width=device-width, initial-scale=1"}],
-    external_stylesheets=[dbc.themes.BOOTSTRAP])
+    external_stylesheets=[dbc.themes.BOOTSTRAP, '/assets/main.css'])
     if (init.helper.userTag == "B3 72 85 0D" or init.helper.userTag == "E3 17 ED 15"):
         app.layout = html.Div(children=[
-            html.H1(children='IoT Dashboard'),
+            html.H1(children='IoT Dashboard', style={'textAlign': 'center'}),
             html.Div(children='''IoT Dashboard is a web application that displays the current status of IoT devices connected to it.
-            ''', id='description'),
+            ''', id='description', style={'textAlign': 'center'}),
             # Create box displaying user tag, temperature threshold, and humidity threshold
             html.Div(id='user-tag-box', children=[
-                html.Img(src=app.get_asset_url(checkProfile()), id='iot-logo', style={'margin-left': 'auto', 'margin-right': 'auto', 'display': 'block', 'width': '100px', 'height': '100px'}),
+                html.Img(src=app.get_asset_url(checkProfile()), id='profile-logo', style={'margin-left': 'auto', 'margin-right': 'auto', 'margin-top': '1%', 'display': 'block', 'width': '100px', 'height': '100px'}),
                 html.H3(children='User Tag', style={'text-align': 'center'}),
                 html.P(children=init.helper.userTag, style={'text-align': 'center'}, id='userTag'),
                 html.H3(children='Temperature Threshold', style={'text-align': 'center'}),
@@ -82,7 +100,7 @@ def createDash():
             # Images for LED on, off, motor on and off
             html.Div(id='led-box', children=[
                 html.H1(children=init.helper.isLightOn, style={'text-align': 'center'}),
-                # html.Img(id='led-image', src=init.helper.ledImage, style={'width': '100px', 'height': '100px'}),
+                html.Img(src=app.get_asset_url(checkLight()), id='light-status', style={'width': '100px', 'height': '100px', 'margin-left': 'auto', 'margin-right': 'auto', 'display': 'block'}),
                 daq.LEDDisplay(
                     id='light-display',
                     value=init.helper.lightIntensity,
@@ -91,29 +109,31 @@ def createDash():
             ]),
             html.Div(id='motor-box', children=[
                 html.H1(children=init.helper.motorStatusMsg, style={'text-align': 'center'}),
-                # html.Img(id='motor-image', src=init.helper.motorImage, style={'width': '100px', 'height': '100px'}),
+                html.Img(src=app.get_asset_url(checkMotor()), id='motor-status', style={'width': '100px', 'height': '100px', 'margin-left': 'auto', 'margin-right': 'auto', 'display': 'block'}),
             ]),
             daq.Gauge(
                 id='temperature-gauge',
                 value=temperature,
-                label='Temperature',
+                label={'label':'Temperature', 'style':{'font-size': '40px', 'color': '#abe2fb'}},
                 max=80,
                 min=20,
+                size=400,
                 units='Celsius',
                 showCurrentValue=True,
                 color={"gradient":True,"ranges":{"aqua":[20, 40],"teal":[40,55],"blue":[55,65],"navy":[65,80]}},
-                style={'margin-right': '70%', 'display': 'block','margin-top': '-20%', 'padding-left': '20%'},
+                style={'margin-right': '70%', 'display': 'block','margin-top': '-40%', 'padding-left': '20%'},
             ),
             daq.Gauge(
                 id='humidity-gauge',
-                value=humidity,
-                label='Humidity',
+                value= humidity,
+                label={'label':'Humidity', 'style':{'font-size': '40px', 'color': '#abe2fb'}},
                 max=80,
                 min=20,
-                units='Humidity %',
+                size=400,
+                units="Humidity (%)",
                 showCurrentValue=True,
-                color={"gradient":True,"ranges":{"aqua":[20, 40],"teal":[40,55],"blue":[55,65],"navy":[65,80]}},
-                style={'margin-right': '50%', 'display': 'block', 'margin-top': '-17%', 'margin-left': '75%'},
+                color={"gradient":True,"ranges":{"aqua":[20, 40],"teal":[40,60],"#7338B3":[60,80]}},
+                style={'margin-right': '50%', 'display': 'block','margin-top': '-29%', 'margin-left': '75%'},
             ),
 
             dcc.Interval(
@@ -185,17 +205,9 @@ def createDash():
         return init.helper.lightThresh  
            
     return app
-
-# def main():
-    # print("Starting MQTT connection...")
-    # client = connect_mqtt()
-    # print("Subscribed to MQTT topic...")
-    # subscribeTopic(client)
-    # print("Starting Dash app...")
-    # client.loop_start()
-#     app = createDash()
-#     app.run_server(debug=True, host='localhost', port=8050)
     
-# main()
 if __name__ == "__main__":
-    app = createDash().run_server(debug=True, host='localhost', port=8050)
+    client = mqtt.connect_mqtt()
+    mqtt.subscribeTopic(client)
+    client.loop_start()
+    app = createDash().run_server(debug=True, host='localhost', port=8000)
