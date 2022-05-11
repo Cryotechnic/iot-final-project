@@ -18,11 +18,7 @@ LED_PIN = 6
 # isLightMailSent = False
 # sentEmailCount = 0 
 # emailMessage = ""
-sourceAdd = 'pythonmailer9843098432@gmail.com'
-destAdd = 'pythonmailer9843098432@gmail.com'
-emailPassword = 'monkeyman123?'
-imap_srv = 'imap.gmail.com'
-imap_port = 993
+
 
 # Motor Initialization
 isMotorOn = False

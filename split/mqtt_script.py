@@ -1,5 +1,7 @@
 from paho.mqtt import client as mqtt_client
 from init_script import *
+import time
+import mail_script
 
 topic = [("IoT/light",0), ("IoT/humidity",0), ("IoT/temperature",0), ("IoT/rfid",0)]
 client_id = f'python-mqtt-{r.randint(0,100)}'
@@ -35,19 +37,16 @@ def subscribeTopic(client: mqtt_client):
         if (msg.topic == "IoT/light"):
             lightMsg = int(msg.payload.decode())
             helper.lightIntensity = lightMsg
-            print(f"DBG --- Light intensity: {lightMsg}")
 
         if (msg.topic == "IoT/humidity"):
             humidityMsg = float(msg.payload.decode())
             helper.humidityThresh = humidityMsg
-            print(f"DBG --- Humidity: {humidityMsg}")
             
         if (msg.topic == "IoT/temperature"):
             temperatureMsg = float(msg.payload.decode())
-            print(f"DBG --- Temperature: {temperatureMsg}")
             helper.temperatureThresh = temperatureMsg
             if (temperatureMsg > 20 and isMotorMailSent != True and helper.sentEmailCount == 0):
-                # sendMotorNotificationEmail()
+                mail_script.sendMotorNotificationEmail()
                 helper.sentEmailCount += 1
                 isMotorMailSent = True
             else:
@@ -57,7 +56,6 @@ def subscribeTopic(client: mqtt_client):
         if (msg.topic == "IoT/rfid"):
             # sendProfileEmail()
             helper.userTag = msg.payload.decode()
-            print(f"DBG --- User Tag: {helper.userTag}")
             for user in users:
                 if(user[0].lower() == helper.userTag.lower().strip()):
                     helper.temperatureThresh = user[1]
@@ -66,8 +64,7 @@ def subscribeTopic(client: mqtt_client):
         # else:
         #     print("DBG --- Unknown topic received.\n")
         if (isMotorMailSent == True and helper.sentEmailCount == 1):
-            print("DBG --- Motor notification email sent.\n")
-            # reply = receiveMail()
+            reply = mail_script.receiveMail()
         if (str(lightMsg) < "400" and isLightMailSent == False):
             # print("-------------------------")
             # print("DBG -- subscribeTopic > LightMsg: " + str(lightMsg))
@@ -76,15 +73,30 @@ def subscribeTopic(client: mqtt_client):
             isLightMailSent = True
             helper.isLightOn = 'Light ON'
             # GPIO.output(LED_PIN, GPIO.HIGH) # Turn on LED
-            print("DBG --- Light is ON")
-            # sendLEDNotificationEmail()
+            mail_script.sendLEDNotificationEmail()
 
     client.subscribe(topic)
     client.on_message = on_message
+    
+    print("All info:")
+    print(f"DBG --- Light intensity: {helper.lightIntensity}")
+    print(f"DBG --- Humidity Thresh: {helper.humidityThresh}")
+    print(f"DBG --- Temperature Thresh: {helper.temperatureThresh}")
+    print(f"DBG --- Temperature: {helper.temperature}")
+    print(f"DBG --- Humidity: {helper.humidity}")
+    print(f"DBG --- Light Thresh: {helper.lightThresh}")
+    print(f"DBG --- Light: {helper.isLightOn}")
+    print(f"DBG --- User Tag: {helper.userTag}")
+    print(f"DBG --- Motor status: {helper.motorStatusMsg}")
+
     return helper.lightIntensity, helper.humidityThresh, helper.temperatureThresh, helper.isLightOn
 
 # main() for testing
 if __name__ == "__main__":
+    
     client = connect_mqtt()
     subscribeTopic(client)
     client.loop_forever()
+    # wait 5 seconds before closing
+    time.sleep(5)
+    
