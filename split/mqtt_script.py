@@ -2,6 +2,7 @@ from paho.mqtt import client as mqtt_client
 from init_script import *
 import time
 import mail_script
+import motor_script
 
 topic = [("IoT/light",0), ("IoT/humidity",0), ("IoT/temperature",0), ("IoT/rfid",0)]
 client_id = f'python-mqtt-{r.randint(0,100)}'
@@ -65,6 +66,9 @@ def subscribeTopic(client: mqtt_client):
         #     print("DBG --- Unknown topic received.\n")
         if (isMotorMailSent == True and helper.sentEmailCount == 1):
             reply = mail_script.receiveMail()
+            if (mail_script.receiveMail()):
+                print("DBG --- Email received.\n")
+                motor_script.spinMotor()
         if (str(lightMsg) < "400" and isLightMailSent == False):
             # print("-------------------------")
             # print("DBG -- subscribeTopic > LightMsg: " + str(lightMsg))
