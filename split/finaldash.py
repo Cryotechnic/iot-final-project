@@ -18,56 +18,185 @@ import dash_daq as daq
 from dash import dcc
 from dash import html
 import dash_bootstrap_components as dbc
+from paho.mqtt import client as mqtt_client
 import random
 # import RPi.GPIO as GPIO
 import mail_script as mail
 import init_script as init
 import mqtt_script as mqtt
 
+#################################################################################################################
+#                                  MQTT STUFF                                                                   #
+#################################################################################################################
+# from init_script import *
+# import random as r
+import time
+# import mail_script
+# import motor_script
+
+topic = [("IoT/light",0), ("IoT/humidity",0), ("IoT/temperature",0), ("IoT/rfid",0)]
+client_id = f'python-mqtt-{r.randint(0,100)}'
+username = "user"
+password = "user"
+broker = 'localhost' # FIXME: Maybe find a way to ask for user input?
+port = 1883
+global lightIntensity
+global isLightOn
+global humidityThresh
+global temperatureThresh
+global lightThresh
+global sentEmailCount
+global userTag
+global temperature
+global humidity
+global motorStatusMsg
+
+
+class mailStatus:
+    isLightMailSent = False
+    isMotorMailSent = False
+
+
+def connect_mqtt() -> mqtt_client:
+    print("Connecting to MQTT broker...")
+    def on_connect(client, userdata, flags, rc):
+        if rc == 0:
+            print("Connected to MQTT broker!\n")
+        else:
+            print("Failed to connect to broker, returned code: " + str(rc) + "\n")
+    client = mqtt_client.Client(client_id)
+    client.on_connect = on_connect
+    client.connect(broker, port)
+    return client
+
+def subscribeTopic(client: mqtt_client):
+    def on_message(client, userdata, msg):
+        lightMsg = ""
+        humidityMsg = ""
+        temperatureMsg = ""
+        lightIntensity = 0
+        humidity = 0
+        temperature = 0
+        motorStatusMsg = "Motor is OFF"
+        userTag = ""
+        isLightOn = "Light is OFF"
+
+        # Sorts based on topic type
+        if (msg.topic == "IoT/light"):
+            lightMsg = int(msg.payload.decode())
+            lightIntensity = lightMsg
+            if (str(lightMsg) < "400" and mailStatus.isLightMailSent == False):
+                # print("-------------------------")
+            # print("DBG -- subscribeTopic > LightMsg: " + str(lightMsg))
+            # print("Email sending...")
+            # print("-------------------------")
+                mailStatus.isLightMailSent = True
+                isLightOn = 'Light is ON'
+            # GPIO.output(LED_PIN, GPIO.HIGH) # Turn on LED
+                mail.sendLEDNotificationEmail()
+
+        if (msg.topic == "IoT/humidity"):
+            humidityMsg = float(msg.payload.decode())
+            humidityThresh = humidityMsg
+            
+        if (msg.topic == "IoT/temperature"):
+            temperatureMsg = float(msg.payload.decode())
+            temperatureThresh = temperatureMsg
+            if (temperatureMsg > 20 and mailStatus.isMotorMailSent != True and sentEmailCount == 0):
+                # motor_script.spinMotor()
+                mail.sendMotorNotificationEmail()
+                sentEmailCount += 1
+                mailStatus.isMotorMailSent = True
+            else:
+                sentEmailCount = 0
+                mailStatus.isMotorMailSent = False
+    
+        if (msg.topic == "IoT/rfid"):
+            userTag = msg.payload.decode()
+            mail.sendProfileEmail()
+            for user in init.users:
+                if(user[0].lower() == userTag.lower().strip()):
+                    temperatureThresh = user[1]
+                    humidityThresh = user[2]
+                    lightThresh = user[3]  
+        # else:
+        #     print("DBG --- Unknown topic received.\n")
+        if (mailStatus.isMotorMailSent == True and sentEmailCount == 1):
+            reply = mail.receiveMail()
+            if (mail.receiveMail()):
+                print("DBG --- Email received.\n")
+                # motor_script.spinMotor()
+
+    client.subscribe(topic)
+    client.on_message = on_message
+
+    # Test data
+    client.publish("IoT/light", "400")
+    client.publish("IoT/humidity", "50")
+    client.publish("IoT/temperature", "20")
+    client.publish("IoT/rfid", "B3 72 85 0D")
+
+    print("All info:")
+    print(f"DBG --- Light intensity: " + str(lightIntensity))
+    print(f"DBG --- Humidity Thresh: {humidityThresh}")
+    print(f"DBG --- Temperature Thresh: {temperatureThresh}")
+    print(f"DBG --- Temperature: {temperature}")
+    print(f"DBG --- Humidity: {humidity}")
+    print(f"DBG --- Light Thresh: {lightThresh}")
+    print(f"DBG --- Light: {isLightOn}")
+    print(f"DBG --- User Tag: {userTag}")
+    print(f"DBG --- Motor status: {motorStatusMsg}")
+    return lightIntensity, humidityThresh, temperatureThresh, temperature, humidity, lightThresh, isLightOn, userTag, motorStatusMsg
+
+
+#################################################################################################################
+#                                  MQTT STUFF END                                                               #
+#################################################################################################################
+
 def updateThresholds(var_name: str, var_value: int):
     if (var_name == "lightThresh"):
-        init.helper.lightThresh = var_value
+        lightThresh = var_value
     elif (var_name == "humidityThresh"):
-        init.helper.humidityThresh = var_value
+        humidityThresh = var_value
     elif (var_name == "temperatureThresh"):
-        init.helper.temperatureThresh = var_value
+        temperatureThresh = var_value
     elif (var_name == "username"):
-        init.helper.username = var_value
+        username = var_value
     else:
         print("DBG -- updateThresholds > Unknown variable name.")
 
 def checkProfile():
-        if (init.helper.userTag == "B3 72 85 0D"):
+        if (userTag == "B3 72 85 0D"):
             return 'person.png'
-        elif (init.helper.userTag == "E3 17 ED 15"):
+        elif (userTag == "E3 17 ED 15"):
             return 'person2.png'
         else:
             return 'person.png'
 
 def checkLight():
-    if (init.helper.lightIntensity >= init.helper.lightThresh):
+    if (lightIntensity >= lightThresh):
         return 'lightOn.png'
     else:
         return 'lightOff.png'
 
 def checkMotor():
-    if (init.helper.motorStatusMsg == "Motor is ON"):
+    if (motorStatusMsg == "Motor is ON"):
         return 'motorOn.png'
     else:
         return 'motorOff.png'
 
 def createDash():
-    temperature = init.helper.temperature
-    humidity = init.helper.humidity 
-    lightIntensity = init.helper.lightIntensity
-    isLightOn = init.helper.isLightOn
-    motorStatusMsg = init.helper.motorStatusMsg
+    # temperature = init.helper.temperature
+    # humidity = init.helper.humidity 
+    # lightIntensity = init.helper.lightIntensity
+    # isLightOn = init.helper.isLightOn
+    # motorStatusMsg = init.helper.motorStatusMsg
     # userTag = init.helper.userTag
     # userTag = "B3 72 85 0D"
     # userTag = "E3 17 ED 15"
-    init.helper.userTag = "B3 72 85 0D"
+    # init.helper.userTag = "B3 72 85 0D"
     # init.helper.userTag = "E3 17 ED 15"
-    userTag = init.helper.userTag
+    # userTag = init.helper.userTag
     print ("DBG -- createDash > userTag: " + userTag)
     # init.helper.lightIntensity = random.randint(0, 1000)
     # init.helper.isLightOn = 'Light OFF'
@@ -89,26 +218,26 @@ def createDash():
             html.Div(id='user-tag-box', children=[
                 html.Img(src=app.get_asset_url(checkProfile()), id='profile-logo', style={'margin-left': 'auto', 'margin-right': 'auto', 'margin-top': '1%', 'display': 'block', 'width': '100px', 'height': '100px'}),
                 html.H3(children='User Tag', style={'text-align': 'center'}),
-                html.P(children=init.helper.userTag, style={'text-align': 'center'}, id='userTag'),
+                html.P(children=userTag, style={'text-align': 'center'}, id='userTag'),
                 html.H3(children='Temperature Threshold', style={'text-align': 'center'}),
-                html.P(children=init.helper.temperatureThresh, style={'text-align': 'center'}, id='tempThres'),
+                html.P(children=temperatureThresh, style={'text-align': 'center'}, id='tempThres'),
                 html.H3(children='Humidity Threshold', style={'text-align': 'center'}),
-                html.P(children=init.helper.humidityThresh, style={'text-align': 'center'}, id='humidityThresh'),
+                html.P(children=humidityThresh, style={'text-align': 'center'}, id='humidityThresh'),
                 html.H3(children='Light Threshold', style={'text-align': 'center'}),
-                html.P(children=init.helper.lightThresh, style={'text-align': 'center'}, id='lightThresh'),
+                html.P(children=lightThresh, style={'text-align': 'center'}, id='lightThresh'),
             ]),
             # Images for LED on, off, motor on and off
             html.Div(id='led-box', children=[
-                html.H1(children=init.helper.isLightOn, style={'text-align': 'center'}),
+                html.H1(children=isLightOn, style={'text-align': 'center'}),
                 html.Img(src=app.get_asset_url(checkLight()), id='light-status', style={'width': '100px', 'height': '100px', 'margin-left': 'auto', 'margin-right': 'auto', 'display': 'block'}),
                 daq.LEDDisplay(
                     id='light-display',
-                    value=init.helper.lightIntensity,
+                    value=lightIntensity,
                     style={'margin-top': '20px', 'text-align': 'center', 'display': 'block'},
                 ),
             ]),
             html.Div(id='motor-box', children=[
-                html.H1(children=init.helper.motorStatusMsg, style={'text-align': 'center'}),
+                html.H1(children=motorStatusMsg, style={'text-align': 'center'}),
                 html.Img(src=app.get_asset_url(checkMotor()), id='motor-status', style={'width': '100px', 'height': '100px', 'margin-left': 'auto', 'margin-right': 'auto', 'display': 'block'}),
             ]),
             daq.Gauge(
@@ -161,53 +290,53 @@ def createDash():
     @app.callback(dash.dependencies.Output('user-tag-box', 'children'),
     [dash.dependencies.Input('temperature-component', 'n_intervals')])
     def update_user_tag(n):
-        return init.helper.userTag, init.helper.temperatureThresh, init.helper.humidityThresh, init.helper.isLightOn, init.helper.motorStatusMsg
+        return userTag, temperatureThresh, humidityThresh, isLightOn, motorStatusMsg
     @app.callback(
         dash.dependencies.Output('humidity-gauge', 'value'),
         [dash.dependencies.Input('humidity-interval', 'n_intervals')]
     )
     def update_output(n):
-        humidity = init.helper.humidity
+        # humidity = init.helper.humidity
         return humidity
     @app.callback(
         dash.dependencies.Output('temperature-gauge', 'value'),
         [dash.dependencies.Input('temperature-interval', 'n_intervals')]
     )
     def update_output2(n):
-        temperature = init.helper.temperature
+        # temperature = init.helper.temperature
         return temperature
     @app.callback(
         dash.dependencies.Output('light-display', 'value'),
         [dash.dependencies.Input('light-interval', 'n_intervals')]
     )
     def update_output3(n):
-        lightIntensity = init.helper.lightIntensity
+        # lightIntensity = init.helper.lightIntensity
         return lightIntensity
 
     @app.callback(dash.dependencies.Output('userTag', 'children'),
         [dash.dependencies.Input('humidity-interval', 'n_intervals')])    
     def update_user_tag(n):
-        return init.helper.userTag  
+        return userTag  
 
     @app.callback(dash.dependencies.Output('tempThres', 'children'),
         [dash.dependencies.Input('temperature-interval', 'n_intervals')])    
     def update_user_temperature(n):
-        return init.helper.temperatureThresh
+        return temperatureThresh
 
     @app.callback(dash.dependencies.Output('humidityThresh', 'children'),
         [dash.dependencies.Input('humidity-interval', 'n_intervals')])    
     def update_user_humidity(n):
-        return init.helper.humidityThresh
+        return humidityThresh
 
     @app.callback(dash.dependencies.Output('lightThresh', 'children'),
         [dash.dependencies.Input('light-interval', 'n_intervals')])    
     def update_user_temperature(n):
-        return init.helper.lightThresh  
+        return lightThresh  
            
     return app
     
 if __name__ == "__main__":
-    client = mqtt.connect_mqtt()
-    mqtt.subscribeTopic(client)
+    client = connect_mqtt()
+    subscribeTopic(client)
     client.loop_start()
     app = createDash().run_server(debug=True, host='localhost', port=8000)
