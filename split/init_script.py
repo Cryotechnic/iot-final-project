@@ -68,7 +68,7 @@ users = [
 
 # Helper Class with default values
 class helper:
-    lightIntensity = '' # NOTE: Displays light value from 0-1000 (0-100%)
+    lightIntensity = 0 # NOTE: Displays light value from 0-1000 (0-100%)
     humidityThresh = 60 # NOTE: Displays humidity threshold value from 20-80
     temperature = 0
     humidity = 0
