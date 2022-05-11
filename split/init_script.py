@@ -44,11 +44,6 @@ port = 1883
 # Icon initialization
 motorIconStatus = False
 lightIconStatus = False
-# profileIcons = [
-#     # person icons
-#     html.Img(src="assets/person.png", height=128, width=128),
-#     html.Img(src="assets/person2.png", height=128, width=128),
-# ]
 
 # Profiles
 users = [
@@ -75,7 +70,7 @@ class helper:
     temperatureThresh = 80 # NOTE: Displays temperature threshold value from 20-100
     lightThresh = 800 # NOTE: Displays light threshold value from 0-1000 (0-100%)
     isLightOn = 'Light is OFF' # NOTE: checks
-    motorStatusMsg = 'Light is ON' # NOTE: Displays motor status
+    motorStatusMsg = 'Motor is ON' # NOTE: Displays motor status
     sentEmailCount = 0 # NOTE: Displays number of emails sent
     userTag = '' # NOTE: Displays user tag
     username = '' # NOTE: Displays username

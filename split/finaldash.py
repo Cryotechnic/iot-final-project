@@ -1,14 +1,4 @@
 # PythonDash for DHT11 sensor, including mailing functions as well as various
-# other init.helper functions
-# TODO: Test the entire code and make sure it works
-# TODO: Test the new styling stuff for motor & LED
-# TODO: Check if variables are being updated correctly
-# TODO: Check if some vars need to be global or local
-# TODO: Update init.helper class if necessary
-# FIXME: Check if the email is being sent correctly
-# FIXME: Check if MQTT is properly handling responses to email requests
-# FIXME: Some other stuff that I didn't take into account
-
 
 # Importing modules
 import random as r
@@ -65,15 +55,9 @@ def createDash():
     # userTag = init.helper.userTag
     # userTag = "B3 72 85 0D"
     # userTag = "E3 17 ED 15"
-    init.helper.userTag = "B3 72 85 0D"
-    # init.helper.userTag = "E3 17 ED 15"
-    userTag = init.helper.userTag
-    print ("DBG -- createDash > userTag: " + userTag)
-    # init.helper.lightIntensity = random.randint(0, 1000)
-    # init.helper.isLightOn = 'Light OFF'
-    # init.helper.motorStatusMsg = "Motor is OFF"
-    # init.helper.userTag = random.randint(10000000000000, 99999999999999)
-    # init.helper.userTag = "E3 17 ED 15"
+    init.helper.userTag = "B3 72 85 0D" # FIXME: Comment or uncomment this line to switch profile icons
+    # init.helper.userTag = "E3 17 ED 15" # FIXME: Comment or uncomment this line to switch profile icons
+    # userTag = init.helper.userTag
 
     # GPIO.setmode(GPIO.BCM)
     # GPIO.setup(17, GPIO.IN)
@@ -210,4 +194,4 @@ if __name__ == "__main__":
     client = mqtt.connect_mqtt()
     mqtt.subscribeTopic(client)
     client.loop_start()
-    app = createDash().run_server(debug=True, host='localhost', port=8000)
+    app = createDash().run_server(debug=True, host='localhost', port=8000, dev_tools_ui=False, dev_tools_props_check=False)

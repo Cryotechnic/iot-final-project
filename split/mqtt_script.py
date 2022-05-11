@@ -9,7 +9,7 @@ topic = [("IoT/light",0), ("IoT/humidity",0), ("IoT/temperature",0), ("IoT/rfid"
 client_id = f'python-mqtt-{r.randint(0,100)}'
 username = "user"
 password = "user"
-broker = '192.168.0.183' # FIXME: Maybe find a way to ask for user input?
+broker = 'localhost' # FIXME: Maybe find a way to ask for user input?
 port = 1883
 class mailStatus:
     isLightMailSent = False
@@ -83,11 +83,12 @@ def subscribeTopic(client: mqtt_client):
     client.subscribe(topic)
     client.on_message = on_message
 
-    # Test data
-    client.publish("IoT/light", "400")
-    client.publish("IoT/humidity", "50")
-    client.publish("IoT/temperature", "20")
-    client.publish("IoT/rfid", "B3 72 85 0D")
+    # Test data 
+    # client.publish("IoT/light", "400")
+    # client.publish("IoT/humidity", "50")
+    # client.publish("IoT/temperature", "20")
+    # client.publish("IoT/rfid", "B3 72 85 0D") # FIXME: Comment/uncomment this line to test the RFID data being loaded correctly on dash
+    # client.publish("IoT/rfid", "E4 72 85 0D") # FIXME: Comment/uncomment this line to test the RFID data being loaded correctly on dash
 
     print("All info:")
     print(f"DBG --- Light intensity: {helper.lightIntensity}")
